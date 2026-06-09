@@ -338,6 +338,41 @@ body {
   color: var(--warn-red);
 }
 
+/* Round controls */
+
+.round-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  width: 100%;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.round-controls[hidden] {
+  display: none;
+}
+
+.round-btn {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--radar-green-dim);
+  border-radius: 0.5rem;
+  background: rgba(0, 255, 136, 0.08);
+  color: var(--radar-green);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.round-btn:active {
+  transform: scale(0.98);
+}
+
 /* Arena panel */
 
 .arena-panel {
@@ -445,21 +480,52 @@ body {
   margin-bottom: 0.35rem;
 }
 
-.arena-share-row {
-  display: flex;
-  gap: 0.4rem;
+.lobby-code {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--radar-green-dim);
+  border-radius: 0.5rem;
+  background: rgba(0, 255, 136, 0.06);
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: clamp(1rem, 4.5vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-align: center;
+  color: var(--radar-green);
+  text-shadow: 0 0 12px var(--radar-green-dim);
 }
 
-.arena-share-url {
-  flex: 1;
-  min-width: 0;
-  padding: 0.5rem 0.6rem;
+.lobby-code-input {
+  width: 100%;
+  margin-bottom: 0.65rem;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--radar-green-faint);
-  border-radius: 0.4rem;
+  border-radius: 0.5rem;
   background: rgba(0, 0, 0, 0.3);
-  color: var(--text);
-  font-size: 0.7rem;
+  color: var(--radar-green);
   font-family: ui-monospace, Consolas, monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.lobby-code-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.lobby-code-input:focus {
+  outline: none;
+  border-color: var(--radar-green-dim);
+  box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.15);
+}
+
+.arena-copy-code {
+  margin-top: 0;
 }
 
 .arena-panel.is-live {

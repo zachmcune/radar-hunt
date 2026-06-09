@@ -40,6 +40,10 @@
 
       <div class="arena-warning" id="arena-warning" hidden aria-live="assertive"></div>
 
+      <div class="round-controls" id="round-controls" hidden>
+        <button type="button" class="round-btn" id="end-round">End round</button>
+      </div>
+
       <section class="arena-panel" id="arena-panel">
         <div class="arena-modes" role="tablist" aria-label="Arena mode">
           <button type="button" id="mode-host" class="arena-mode is-active" role="tab" aria-selected="true">
@@ -68,16 +72,27 @@
             Create arena at my location
           </button>
           <div class="arena-share" id="host-share" hidden>
-            <p class="arena-share-label">Share with players</p>
-            <div class="arena-share-row">
-              <input type="text" class="arena-share-url" id="arena-share-url" readonly>
-              <button type="button" class="arena-copy" id="arena-copy">Copy</button>
-            </div>
+            <p class="arena-share-label">Lobby code — share with players</p>
+            <div class="lobby-code" id="lobby-code" aria-live="polite">----</div>
+            <button type="button" class="arena-action arena-copy-code" id="arena-copy-code">
+              Copy lobby code
+            </button>
           </div>
         </div>
 
         <div id="join-setup" class="arena-setup" hidden>
-          <p class="arena-hint">Open a host share link, or join below with GPS enabled.</p>
+          <p class="arena-hint">Enter the lobby code from your host.</p>
+          <label class="arena-radius-label" for="lobby-code-input">Lobby code</label>
+          <input
+            type="text"
+            id="lobby-code-input"
+            class="lobby-code-input"
+            placeholder="e.g. ABCD-EFGH-IJKL"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            enterkeyhint="go"
+          >
           <button type="button" class="arena-action" id="arena-join">
             Join arena &amp; enable GPS
           </button>

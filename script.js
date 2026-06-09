@@ -22,8 +22,9 @@
   const arenaRadiusValue = document.getElementById("arena-radius-value");
   const arenaCreateBtn = document.getElementById("arena-create");
   const hostShare = document.getElementById("host-share");
-  const arenaShareUrl = document.getElementById("arena-share-url");
-  const arenaCopyBtn = document.getElementById("arena-copy");
+  const lobbyCodeEl = document.getElementById("lobby-code");
+  const arenaCopyCodeBtn = document.getElementById("arena-copy-code");
+  const lobbyCodeInput = document.getElementById("lobby-code-input");
   const arenaJoinBtn = document.getElementById("arena-join");
   const geoPanel = document.getElementById("geo-panel");
   const geoEnable = document.getElementById("geo-enable");
@@ -36,6 +37,8 @@
   const rowRadius = document.getElementById("row-radius");
   const arenaDistanceEl = document.getElementById("arena-distance");
   const arenaRadiusDisplay = document.getElementById("arena-radius-display");
+  const roundControls = document.getElementById("round-controls");
+  const endRoundBtn = document.getElementById("end-round");
 
   /* --- Constants --- */
 
@@ -61,6 +64,7 @@
   let watchId = null;
   let pendingArenaCreate = false;
   let uiMode = "host";
+  let currentLobbyCode = "";
 
   const arena = {
     active: false,
@@ -208,10 +212,115 @@
     requestAnimationFrame(tick);
   }
 
+  /* --- Lobby code --- */
+
+  function bytesToBase64Url(bytes) {
+    let binary = "";
+    bytes.forEach(function (b) {
+      binary += String.fromCharCode(b);
+    });
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function base64UrlToBytes(str) {
+    let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) {
+      base64 += "=";
+    }
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  function normalizeLobbyCode(input) {
+    return String(input).replace(/[\s-]/g, "").toUpperCase();
+  }
+
+  function formatLobbyCode(raw) {
+    return raw.match(/.{1,4}/g).join("-");
+  }
+
+  function encodeLobbyCode(lat, lng, radiusM) {
+    const buf = new ArrayBuffer(10);
+    const view = new DataView(buf);
+    view.setInt32(0, Math.round(lat * 1e6));
+    view.setInt32(4, Math.round(lng * 1e6));
+    view.setUint16(8, Math.round(radiusM));
+    return bytesToBase64Url(new Uint8Array(buf));
+  }
+
+  function decodeLobbyCode(input) {
+    const raw = normalizeLobbyCode(input);
+    if (!raw) return null;
+
+    try {
+      const bytes = base64UrlToBytes(raw);
+      if (bytes.length !== 10) return null;
+
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const lat = view.getInt32(0) / 1e6;
+      const lng = view.getInt32(4) / 1e6;
+      const radiusM = view.getUint16(8);
+
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+      if (radiusM < 25 || radiusM > 500) return null;
+
+      return { lat, lng, radiusM };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function applyLobbyCode(input) {
+    const decoded = decodeLobbyCode(input);
+    if (!decoded) return false;
+
+    arena.centerLat = decoded.lat;
+    arena.centerLng = decoded.lng;
+    arena.radiusM = decoded.radiusM;
+    return true;
+  }
+
+  function buildCodeUrl(code) {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("code", formatLobbyCode(code));
+    return url.toString();
+  }
+
+  function copyText(text, button, defaultLabel) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        button.textContent = "Copied!";
+        setTimeout(function () {
+          button.textContent = defaultLabel;
+        }, 2000);
+      });
+    } else {
+      button.textContent = "Copied!";
+      setTimeout(function () {
+        button.textContent = defaultLabel;
+      }, 2000);
+    }
+  }
+
   /* --- Arena --- */
 
   function parseArenaFromUrl() {
     const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+
+    if (code) {
+      if (!applyLobbyCode(code)) return false;
+      if (lobbyCodeInput) {
+        lobbyCodeInput.value = formatLobbyCode(normalizeLobbyCode(code));
+      }
+      return true;
+    }
+
     const lat = parseFloat(params.get("lat"));
     const lng = parseFloat(params.get("lng"));
     const r = parseFloat(params.get("r"));
@@ -223,17 +332,7 @@
     arena.centerLat = lat;
     arena.centerLng = lng;
     arena.radiusM = r;
-    arena.role = "player";
     return true;
-  }
-
-  function buildShareUrl() {
-    const url = new URL(window.location.href);
-    url.search = "";
-    url.searchParams.set("lat", arena.centerLat.toFixed(6));
-    url.searchParams.set("lng", arena.centerLng.toFixed(6));
-    url.searchParams.set("r", String(Math.round(arena.radiusM)));
-    return url.toString();
   }
 
   function approachThreshold() {
@@ -279,6 +378,91 @@
     if (arena.zone === "outside") playerDot.classList.add("is-outside");
   }
 
+  function stopTracking() {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+  }
+
+  function resetGeoUi() {
+    geoPanel.classList.remove("is-tracking");
+    geoEnable.hidden = false;
+    geoEnable.disabled = false;
+    geoEnable.textContent = "Enable GPS";
+    geoData.hidden = true;
+    geoLat.textContent = "—";
+    geoLng.textContent = "—";
+    geoAccuracy.textContent = "—";
+    clearGeoError();
+  }
+
+  function clearArenaUrl() {
+    const url = new URL(window.location.href);
+    url.search = "";
+    window.history.replaceState(null, "", url.pathname + url.hash);
+  }
+
+  function resetArenaState() {
+    arena.active = false;
+    arena.role = null;
+    arena.centerLat = null;
+    arena.centerLng = null;
+    arena.distanceM = null;
+    arena.zone = "safe";
+    pendingArenaCreate = false;
+  }
+
+  function resetToStartScreen(options) {
+    const endedMessage = options && options.endedMessage;
+
+    resetArenaState();
+    stopTracking();
+    resetGeoUi();
+    clearArenaUrl();
+
+    appEl.classList.remove("arena-approach", "arena-outside");
+    radar.classList.remove("arena-active");
+    arenaBoundary.hidden = true;
+    playerDot.hidden = true;
+    playerDot.classList.remove("is-approach", "is-outside");
+    arenaPanel.classList.remove("is-live");
+    roundControls.hidden = true;
+
+    arenaWarning.hidden = true;
+    arenaWarning.classList.remove("is-approach", "is-outside");
+    arenaWarning.textContent = "";
+
+    rowDistance.hidden = true;
+    rowRadius.hidden = true;
+    arenaDistanceEl.textContent = "—";
+
+    hostShare.hidden = true;
+    lobbyCodeEl.textContent = "----";
+    currentLobbyCode = "";
+    lobbyCodeInput.value = "";
+    arenaCreateBtn.disabled = false;
+    arenaCreateBtn.textContent = "Create arena at my location";
+
+    setUiMode(uiMode);
+
+    subtitle.textContent = endedMessage || "Scanning the area…";
+    statusText.textContent = "Active scan";
+    scatterBlips();
+  }
+
+  function endRound() {
+    const message =
+      arena.role === "host"
+        ? "End this round for everyone? Players will need a new lobby code to join again."
+        : "Leave this round and return to the start screen?";
+
+    if (!window.confirm(message)) return;
+
+    uiMode = "host";
+    resetToStartScreen({ endedMessage: "Round ended" });
+  }
+
   function updateArenaUi() {
     appEl.classList.remove("arena-approach", "arena-outside");
     arenaWarning.hidden = true;
@@ -290,6 +474,7 @@
     radar.classList.add("arena-active");
     arenaBoundary.hidden = false;
     arenaPanel.classList.add("is-live");
+    roundControls.hidden = false;
     showArenaRows();
 
     if (arena.zone === "approach") {
@@ -325,23 +510,37 @@
     arena.radiusM = parseInt(arenaRadiusInput.value, 10);
     activateArena("host");
 
-    const shareUrl = buildShareUrl();
-    arenaShareUrl.value = shareUrl;
+    currentLobbyCode = encodeLobbyCode(lat, lng, arena.radiusM);
+    lobbyCodeEl.textContent = formatLobbyCode(currentLobbyCode);
     hostShare.hidden = false;
     arenaCreateBtn.textContent = "Arena created at your location";
 
-    window.history.replaceState(null, "", shareUrl);
+    window.history.replaceState(null, "", buildCodeUrl(currentLobbyCode));
   }
 
-  function joinArenaFromParams() {
-    if (!parseArenaFromUrl()) {
-      showGeoError("Invalid arena link. Ask the host for a new share URL.");
+  function joinArena() {
+    const inputCode = lobbyCodeInput.value.trim();
+    const urlCode = new URLSearchParams(window.location.search).get("code");
+    const code = inputCode || urlCode;
+
+    if (!code) {
+      showGeoError("Enter the lobby code from your host.");
       return false;
     }
+
+    if (!applyLobbyCode(code)) {
+      showGeoError("Invalid lobby code. Check it and try again.");
+      return false;
+    }
+
+    lobbyCodeInput.value = formatLobbyCode(normalizeLobbyCode(code));
     arenaRadiusInput.value = String(Math.round(arena.radiusM));
     arenaRadiusValue.textContent = formatDistance(arena.radiusM);
     activateArena("player");
     setUiMode("join");
+
+    currentLobbyCode = encodeLobbyCode(arena.centerLat, arena.centerLng, arena.radiusM);
+    window.history.replaceState(null, "", buildCodeUrl(currentLobbyCode));
     return true;
   }
 
@@ -454,27 +653,21 @@
   });
 
   arenaJoinBtn.addEventListener("click", function () {
-    if (!joinArenaFromParams()) return;
+    if (!joinArena()) return;
     startTracking();
   });
 
-  arenaCopyBtn.addEventListener("click", function () {
-    const url = arenaShareUrl.value;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(function () {
-        arenaCopyBtn.textContent = "Copied!";
-        setTimeout(function () {
-          arenaCopyBtn.textContent = "Copy";
-        }, 2000);
-      });
-    } else {
-      arenaShareUrl.select();
-      document.execCommand("copy");
-      arenaCopyBtn.textContent = "Copied!";
-      setTimeout(function () {
-        arenaCopyBtn.textContent = "Copy";
-      }, 2000);
+  lobbyCodeInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      arenaJoinBtn.click();
     }
+  });
+
+  endRoundBtn.addEventListener("click", endRound);
+
+  arenaCopyCodeBtn.addEventListener("click", function () {
+    if (!currentLobbyCode) return;
+    copyText(formatLobbyCode(currentLobbyCode), arenaCopyCodeBtn, "Copy lobby code");
   });
 
   geoEnable.addEventListener("click", startTracking);
@@ -488,11 +681,7 @@
     scatterBlips();
   });
 
-  window.addEventListener("beforeunload", function () {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-    }
-  });
+  window.addEventListener("beforeunload", stopTracking);
 
   /* --- Init --- */
 
@@ -500,11 +689,11 @@
   scatterBlips();
   requestAnimationFrame(tick);
 
-  const hasArenaLink = parseArenaFromUrl();
+  const hasArenaInvite = parseArenaFromUrl();
 
-  if (hasArenaLink) {
+  if (hasArenaInvite) {
     setUiMode("join");
-    subtitle.textContent = "Arena link detected";
+    subtitle.textContent = "Lobby code detected";
   }
 
   if (navigator.permissions && navigator.permissions.query) {
@@ -512,8 +701,8 @@
       .query({ name: "geolocation" })
       .then(function (result) {
         if (result.state === "granted") {
-          if (hasArenaLink) {
-            joinArenaFromParams();
+          if (hasArenaInvite) {
+            joinArena();
           }
           startTracking();
         }
