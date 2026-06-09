@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0f14">
+  <title>Radar Hunt</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1 class="title">Radar Hunt</h1>
+      <p class="subtitle">Scanning the area…</p>
+    </header>
+
+    <main class="radar-stage">
+      <div class="radar" id="radar" aria-hidden="true">
+        <div class="radar-grid"></div>
+        <div class="radar-rings">
+          <span class="ring"></span>
+          <span class="ring"></span>
+          <span class="ring"></span>
+          <span class="ring"></span>
+        </div>
+        <div class="radar-crosshair"></div>
+        <div class="radar-sweep" id="radar-sweep"></div>
+        <div class="radar-center"></div>
+        <div class="blips" id="blips"></div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="status">
+        <span class="status-dot"></span>
+        <span id="status-text">Active scan</span>
+      </div>
+
+      <section class="geo-panel" id="geo-panel" aria-live="polite">
+        <button class="geo-enable" id="geo-enable" type="button">
+          Enable GPS
+        </button>
+
+        <dl class="geo-data" id="geo-data" hidden>
+          <div class="geo-row">
+            <dt>Latitude</dt>
+            <dd id="geo-lat">—</dd>
+          </div>
+          <div class="geo-row">
+            <dt>Longitude</dt>
+            <dd id="geo-lng">—</dd>
+          </div>
+          <div class="geo-row">
+            <dt>Accuracy</dt>
+            <dd id="geo-accuracy">—</dd>
+          </div>
+        </dl>
+
+        <p class="geo-message" id="geo-message" hidden></p>
+      </section>
+
+      <p class="hint">Move your device to explore</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
