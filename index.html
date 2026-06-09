@@ -8,10 +8,10 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
+  <div class="app" id="app">
     <header class="header">
       <h1 class="title">Radar Hunt</h1>
-      <p class="subtitle">Scanning the area…</p>
+      <p class="subtitle" id="subtitle">Scanning the area…</p>
     </header>
 
     <main class="radar-stage">
@@ -23,18 +23,66 @@
           <span class="ring"></span>
           <span class="ring"></span>
         </div>
+        <div class="arena-boundary" id="arena-boundary" hidden></div>
         <div class="radar-crosshair"></div>
         <div class="radar-sweep" id="radar-sweep"></div>
-        <div class="radar-center"></div>
+        <div class="radar-center" id="radar-center"></div>
+        <div class="player-dot" id="player-dot" hidden></div>
         <div class="blips" id="blips"></div>
       </div>
     </main>
 
     <footer class="footer">
       <div class="status">
-        <span class="status-dot"></span>
+        <span class="status-dot" id="status-dot"></span>
         <span id="status-text">Active scan</span>
       </div>
+
+      <div class="arena-warning" id="arena-warning" hidden aria-live="assertive"></div>
+
+      <section class="arena-panel" id="arena-panel">
+        <div class="arena-modes" role="tablist" aria-label="Arena mode">
+          <button type="button" id="mode-host" class="arena-mode is-active" role="tab" aria-selected="true">
+            Host
+          </button>
+          <button type="button" id="mode-join" class="arena-mode" role="tab" aria-selected="false">
+            Join
+          </button>
+        </div>
+
+        <div id="host-setup" class="arena-setup">
+          <label class="arena-radius-label" for="arena-radius">
+            Arena radius
+            <span class="arena-radius-value" id="arena-radius-value">100 m</span>
+          </label>
+          <input
+            type="range"
+            id="arena-radius"
+            class="arena-radius-input"
+            min="25"
+            max="500"
+            step="5"
+            value="100"
+          >
+          <button type="button" class="arena-action" id="arena-create">
+            Create arena at my location
+          </button>
+          <div class="arena-share" id="host-share" hidden>
+            <p class="arena-share-label">Share with players</p>
+            <div class="arena-share-row">
+              <input type="text" class="arena-share-url" id="arena-share-url" readonly>
+              <button type="button" class="arena-copy" id="arena-copy">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="join-setup" class="arena-setup" hidden>
+          <p class="arena-hint">Open a host share link, or join below with GPS enabled.</p>
+          <button type="button" class="arena-action" id="arena-join">
+            Join arena &amp; enable GPS
+          </button>
+        </div>
+      </section>
 
       <section class="geo-panel" id="geo-panel" aria-live="polite">
         <button class="geo-enable" id="geo-enable" type="button">
@@ -53,6 +101,14 @@
           <div class="geo-row">
             <dt>Accuracy</dt>
             <dd id="geo-accuracy">—</dd>
+          </div>
+          <div class="geo-row arena-only" id="row-distance" hidden>
+            <dt>Distance</dt>
+            <dd id="arena-distance">—</dd>
+          </div>
+          <div class="geo-row arena-only" id="row-radius" hidden>
+            <dt>Arena radius</dt>
+            <dd id="arena-radius-display">—</dd>
           </div>
         </dl>
 

@@ -12,6 +12,10 @@
   --radar-green: #00ff88;
   --radar-green-dim: rgba(0, 255, 136, 0.35);
   --radar-green-faint: rgba(0, 255, 136, 0.08);
+  --warn-amber: #ffb020;
+  --warn-amber-dim: rgba(255, 176, 32, 0.4);
+  --warn-red: #ff4466;
+  --warn-red-dim: rgba(255, 68, 102, 0.45);
   --text: #e8f4f0;
   --text-muted: #6b8f7e;
   --safe-top: env(safe-area-inset-top, 0px);
@@ -206,6 +210,266 @@ body {
   will-change: opacity, transform;
 }
 
+.radar.arena-active .blips {
+  opacity: 0.35;
+}
+
+/* Arena on radar */
+
+.arena-boundary {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 92%;
+  height: 92%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px dashed var(--radar-green-dim);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.arena-boundary[hidden] {
+  display: none;
+}
+
+.player-dot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--radar-green);
+  box-shadow: 0 0 12px var(--radar-green);
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.player-dot[hidden] {
+  display: none;
+}
+
+.player-dot.is-approach {
+  background: var(--warn-amber);
+  box-shadow: 0 0 14px var(--warn-amber);
+}
+
+.player-dot.is-outside {
+  background: var(--warn-red);
+  box-shadow: 0 0 16px var(--warn-red);
+  animation: outside-pulse 1s ease-in-out infinite;
+}
+
+@keyframes outside-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* Arena state on app */
+
+.app.arena-approach {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 45%, rgba(255, 176, 32, 0.07) 0%, transparent 70%),
+    var(--bg);
+}
+
+.app.arena-approach .radar {
+  border-color: var(--warn-amber-dim);
+  box-shadow:
+    0 0 40px rgba(255, 176, 32, 0.15),
+    inset 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+.app.arena-outside {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 45%, rgba(255, 68, 102, 0.12) 0%, transparent 70%),
+    #120a10;
+}
+
+.app.arena-outside .title {
+  color: var(--warn-red);
+  text-shadow: 0 0 20px var(--warn-red-dim);
+}
+
+.app.arena-outside .radar {
+  border-color: var(--warn-red);
+  box-shadow:
+    0 0 48px rgba(255, 68, 102, 0.35),
+    inset 0 0 60px rgba(0, 0, 0, 0.5);
+  animation: radar-alert 1.2s ease-in-out infinite;
+}
+
+.app.arena-outside .status-dot {
+  background: var(--warn-red);
+  animation: status-blink 0.8s ease-in-out infinite;
+}
+
+@keyframes radar-alert {
+  0%, 100% { box-shadow: 0 0 48px rgba(255, 68, 102, 0.35), inset 0 0 60px rgba(0, 0, 0, 0.5); }
+  50%      { box-shadow: 0 0 64px rgba(255, 68, 102, 0.55), inset 0 0 60px rgba(0, 0, 0, 0.5); }
+}
+
+.arena-warning {
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.arena-warning[hidden] {
+  display: none;
+}
+
+.arena-warning.is-approach {
+  background: rgba(255, 176, 32, 0.12);
+  border: 1px solid var(--warn-amber-dim);
+  color: var(--warn-amber);
+}
+
+.arena-warning.is-outside {
+  background: rgba(255, 68, 102, 0.15);
+  border: 1px solid var(--warn-red);
+  color: var(--warn-red);
+}
+
+/* Arena panel */
+
+.arena-panel {
+  margin-top: 0.75rem;
+  width: 100%;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.arena-modes {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.arena-mode {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--radar-green-faint);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arena-mode.is-active {
+  border-color: var(--radar-green-dim);
+  background: rgba(0, 255, 136, 0.1);
+  color: var(--radar-green);
+}
+
+.arena-setup[hidden] {
+  display: none;
+}
+
+.arena-radius-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.arena-radius-value {
+  color: var(--radar-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-radius-input {
+  width: 100%;
+  margin-bottom: 0.65rem;
+  accent-color: var(--radar-green);
+}
+
+.arena-action,
+.arena-copy {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--radar-green-dim);
+  border-radius: 0.5rem;
+  background: rgba(0, 255, 136, 0.08);
+  color: var(--radar-green);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arena-copy {
+  width: auto;
+  flex-shrink: 0;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.7rem;
+}
+
+.arena-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 0.65rem;
+}
+
+.arena-share {
+  margin-top: 0.65rem;
+}
+
+.arena-share-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.arena-share-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.arena-share-url {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--radar-green-faint);
+  border-radius: 0.4rem;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-size: 0.7rem;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.arena-panel.is-live {
+  display: none;
+}
+
+.geo-row.arena-only[hidden] {
+  display: none;
+}
+
 /* Footer */
 
 .footer {
@@ -393,7 +657,9 @@ body {
     transform: rotate(45deg);
   }
 
-  .status-dot {
+  .status-dot,
+  .player-dot.is-outside,
+  .app.arena-outside .radar {
     animation: none;
   }
 }
